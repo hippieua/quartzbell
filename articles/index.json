@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "articles": [
+    {
+      "id": 1,
+      "name": "mangust-uart",
+      "rev": 1,
+      "file": "1.json"
+    }
+  ]
+}
