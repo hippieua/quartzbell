@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "id": 1,
+  "name": "mangust-uart",
+  "rev": 1,
+  "adapter_a_type": "0x06",
+  "adapter_b_type": "0x11",
+  "nets": [
+    {
+      "a_pins": [
+        3
+      ],
+      "b_pins": [
+        2
+      ]
+    },
+    {
+      "a_pins": [
+        4
+      ],
+      "b_pins": [
+        3
+      ]
+    },
+    {
+      "a_pins": [
+        5
+      ],
+      "b_pins": [
+        1
+      ]
+    },
+    {
+      "a_pins": [
+        6
+      ],
+      "b_pins": [
+        4
+      ]
+    }
+  ]
+}
