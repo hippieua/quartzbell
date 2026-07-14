@@ -7,6 +7,12 @@ name: publish articles
 #
 # The id is assigned at MERGE, never by a device: two testers proposing the same
 # morning can then never claim the same number (docs/public_repo.md §8).
+#
+# The result is written back through the CONTENTS API, not `git push`: pushing from
+# the runner is refused by this repo ("remote: fatal error in commit_refs"), and the
+# API path is the one that demonstrably works. It also means the commits are created
+# server-side and carry GitHub's own signature. Commits made with GITHUB_TOKEN do not
+# re-trigger workflows, so this cannot loop on itself.
 
 on:
   push:
@@ -21,13 +27,16 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Assign ids, publish articles, rebuild the index
+      - name: Assign ids and rebuild the index
         run: |
           python3 - <<'PY'
-          import json, os, pathlib, re, sys
+          import base64, json, pathlib, re, subprocess, sys
 
           ART = pathlib.Path("articles")
           INC = ART / "incoming"
@@ -50,6 +59,7 @@ jobs:
               published[int(p.stem)] = load(p)
 
           next_id = (max(published) + 1) if published else 1
+          plan = []  # (action, path, content|None)
 
           for p in sorted(INC.glob("*.json")) if INC.is_dir() else []:
               art = load(p)
@@ -62,8 +72,8 @@ jobs:
                   sys.exit(1)
 
               # A name identifies a cable to a human, so it must mean exactly one cable.
-              # The device refuses a name another tester already used; this is the same
-              # rule enforced where it CANNOT be bypassed by an old firmware.
+              # The device refuses a name another tester already used; this repeats the
+              # rule where an old firmware CANNOT bypass it.
               name = art.get("name", "")
               clash = [i for i, a in published.items() if a.get("name") == name]
               if clash:
@@ -71,11 +81,11 @@ jobs:
                   sys.exit(1)
 
               art["id"] = next_id
-              out = ART / f"{next_id}.json"
-              out.write_text(json.dumps(art, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+              body = json.dumps(art, ensure_ascii=False, indent=2) + "\n"
+              plan.append(("put", f"articles/{next_id}.json", body))
+              plan.append(("del", str(p).replace("\\", "/"), None))
               published[next_id] = art
-              p.unlink()  # the proposal became an article; it does not live in two places
-              print(f"published {p.name} -> {out.name} (id {next_id}, '{name}')")
+              print(f"publishing {p.name} -> {next_id}.json ('{name}')")
               next_id += 1
 
           index = {
@@ -90,17 +100,57 @@ jobs:
                   for i in sorted(published)
               ],
           }
-          (ART / "index.json").write_text(
-              json.dumps(index, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+          index_body = json.dumps(index, ensure_ascii=False, indent=2) + "\n"
+
+          old_index = ART / "index.json"
+          if (not old_index.is_file()) or (old_index.read_text(encoding="utf-8") != index_body):
+              plan.append(("put", "articles/index.json", index_body))
+
+          if not plan:
+              print("nothing to publish")
+
+          pathlib.Path("plan.json").write_text(
+              json.dumps([
+                  {"action": a, "path": p, "content": (base64.b64encode(c.encode()).decode() if c else None)}
+                  for a, p, c in plan
+              ]),
+              encoding="utf-8",
           )
-          print(f"index rebuilt: {len(index['articles'])} article(s)")
           PY
 
-      - name: Commit
+      - name: Commit through the API
         run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A articles
-          git diff --cached --quiet && echo "nothing to publish" && exit 0
-          git commit -m "articles: assign ids and rebuild the index"
-          git push
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+
+          repo = os.environ["REPO"]
+          plan = json.loads(pathlib.Path("plan.json").read_text(encoding="utf-8"))
+
+          def gh(*args):
+              return subprocess.run(["gh", *args], capture_output=True, text=True)
+
+          def sha_of(path):
+              r = gh("api", f"repos/{repo}/contents/{path}", "--jq", ".sha")
+              return r.stdout.strip() if r.returncode == 0 else ""
+
+          for step in plan:
+              path, action = step["path"], step["action"]
+              sha = sha_of(path)
+              if action == "put":
+                  args = ["api", "-X", "PUT", f"repos/{repo}/contents/{path}",
+                          "-f", f"message=articles: publish {path}",
+                          "-f", f"content={step['content']}"]
+                  if sha:
+                      args += ["-f", f"sha={sha}"]
+              else:
+                  if not sha:
+                      continue  # already gone
+                  args = ["api", "-X", "DELETE", f"repos/{repo}/contents/{path}",
+                          "-f", f"message=articles: {path} is published",
+                          "-f", f"sha={sha}"]
+              r = gh(*args)
+              if r.returncode != 0:
+                  print(f"::error::{action} {path}: {r.stderr.strip()}")
+                  raise SystemExit(1)
+              print(f"{action} {path}: ok")
+          PY
