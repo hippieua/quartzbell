@@ -1,0 +1,105 @@
+name: publish articles
+
+# A merged proposal is not yet an article. This turns it into one:
+#   articles/incoming/<name>-<tester>.json   (id: 0, "unassigned")
+#     -> articles/<id>.json                  (id assigned here, and only here)
+#     -> articles/index.json                 (rebuilt from what is actually on disk)
+#
+# The id is assigned at MERGE, never by a device: two testers proposing the same
+# morning can then never claim the same number (docs/public_repo.md §8).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'articles/**'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assign ids, publish articles, rebuild the index
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, re, sys
+
+          ART = pathlib.Path("articles")
+          INC = ART / "incoming"
+          ART.mkdir(exist_ok=True)
+
+          def load(p):
+              with p.open(encoding="utf-8") as f:
+                  return json.load(f)
+
+          # Published articles are articles/<id>.json — nothing else in that directory is
+          # one. index.json is rebuilt from them, so it can never drift from the truth on
+          # disk (a hand-edited index is a lie waiting to be fetched by a tester).
+          published = {}
+          for p in ART.glob("*.json"):
+              if p.name == "index.json":
+                  continue
+              if not re.fullmatch(r"\d+", p.stem):
+                  print(f"::warning::{p} is not <id>.json - ignored")
+                  continue
+              published[int(p.stem)] = load(p)
+
+          next_id = (max(published) + 1) if published else 1
+
+          for p in sorted(INC.glob("*.json")) if INC.is_dir() else []:
+              art = load(p)
+
+              # A proposal must not carry an id: the device sends 0. Anything else means
+              # someone hand-edited it, and silently trusting that number is how two
+              # articles end up fighting over one id.
+              if int(art.get("id", 0)) != 0:
+                  print(f"::error::{p} arrived with id={art['id']} - proposals must have id 0")
+                  sys.exit(1)
+
+              # A name identifies a cable to a human, so it must mean exactly one cable.
+              # The device refuses a name another tester already used; this is the same
+              # rule enforced where it CANNOT be bypassed by an old firmware.
+              name = art.get("name", "")
+              clash = [i for i, a in published.items() if a.get("name") == name]
+              if clash:
+                  print(f"::error::{p}: the name '{name}' is already article {clash[0]}")
+                  sys.exit(1)
+
+              art["id"] = next_id
+              out = ART / f"{next_id}.json"
+              out.write_text(json.dumps(art, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+              published[next_id] = art
+              p.unlink()  # the proposal became an article; it does not live in two places
+              print(f"published {p.name} -> {out.name} (id {next_id}, '{name}')")
+              next_id += 1
+
+          index = {
+              "version": 1,
+              "articles": [
+                  {
+                      "id": i,
+                      "name": published[i].get("name", ""),
+                      "rev": published[i].get("rev", 1),
+                      "file": f"{i}.json",
+                  }
+                  for i in sorted(published)
+              ],
+          }
+          (ART / "index.json").write_text(
+              json.dumps(index, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+          )
+          print(f"index rebuilt: {len(index['articles'])} article(s)")
+          PY
+
+      - name: Commit
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A articles
+          git diff --cached --quiet && echo "nothing to publish" && exit 0
+          git commit -m "articles: assign ids and rebuild the index"
+          git push
