@@ -2,6 +2,6 @@
   "version": 1,
   "fw_version": "0.2.1",
   "url": "https://github.com/hippieua/quartzbell/releases/download/v0.2.1/fw-0.2.1.bin",
-  "sha256": "edcc162af76aa94cc6acc341304401ba88e63828b105fc4bb08e35df1092c6d3",
+  "sha256": "edcc162af76aa94cc6acc341304401ba88e63828b105fc4bb08e35df1092c6d2",
   "signature": "MEQCICBkANVYMD6xSFrGFheWInZRT1w6DebNP+LliUIrxeGcAiAJFkIt/eqlX16KvYOQZNloCp646i+U1Nly4JfY6IxYQg=="
 }
