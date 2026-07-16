@@ -6,6 +6,13 @@
       "name": "mangust-uart",
       "rev": 1,
       "file": "1.json"
+    },
+    {
+      "id": 2,
+      "name": "11",
+      "rev": 1,
+      "file": "2.json",
+      "inv_no": "23423/2"
     }
   ]
 }
