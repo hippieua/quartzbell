@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "fw_version": "1.0.1",
-  "url": "https://github.com/hippieua/quartzbell/releases/download/v1.0.1/fw-1.0.1.bin",
-  "sha256": "3b8f51ddb4ea104b92c87083ce200811f094f83e98c1cf0eeff8b381992d78af",
-  "signature": "MEUCIGj5z23EoGBxrxeut4oLr29xTKFJfW15hpAR6KKVBICvAiEA+4d0N4MPqnhlKAd64oGJdvu6eaEWeWXj8ViHvq8l5Zs="
+  "fw_version": "1.0.2",
+  "url": "https://github.com/hippieua/quartzbell/releases/download/v1.0.2/fw-1.0.2.bin",
+  "sha256": "9a79523d65c614da2fe9f165941921cfb7efc4e346ab4aa42132a20425f7aae9",
+  "signature": "MEYCIQD4Dpm19xngwmCJDz62ZxjZ6LCYyfCRGfUOZrMH1ScBxgIhALOXRnEO22pWO4W9t/xLxPK4uI5H3W5/d1J/55A0tANi"
 }
