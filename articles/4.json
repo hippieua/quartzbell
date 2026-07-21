@@ -41,7 +41,7 @@
   ],
   "inv_no": "1112222",
   "doc": {
-    "title": "I2C - airsped",
+    "title": "Кабель STX I2C для Airspeed Sensor",
     "length_mm": 1250,
     "wires": [
       {
