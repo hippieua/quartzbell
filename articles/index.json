@@ -2,26 +2,6 @@
   "version": 1,
   "articles": [
     {
-      "id": 1,
-      "name": "mangust-uart",
-      "rev": 1,
-      "file": "1.json"
-    },
-    {
-      "id": 2,
-      "name": "11",
-      "rev": 1,
-      "file": "2.json",
-      "inv_no": "23423/2"
-    },
-    {
-      "id": 3,
-      "name": "test13332",
-      "rev": 1,
-      "file": "3.json",
-      "inv_no": "345345"
-    },
-    {
       "id": 4,
       "name": "i2c",
       "rev": 1,
