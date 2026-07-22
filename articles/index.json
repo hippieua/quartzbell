@@ -7,6 +7,13 @@
       "rev": 1,
       "file": "4.json",
       "inv_no": "1112222"
+    },
+    {
+      "id": 5,
+      "name": "ic2-test",
+      "rev": 1,
+      "file": "5.json",
+      "inv_no": "50013.5.0"
     }
   ]
 }
