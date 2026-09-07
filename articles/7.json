@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "id": 7,
+  "name": "50074.5.0",
+  "rev": 1,
+  "adapter_a_type": "0x04",
+  "adapter_b_type": "0x04",
+  "nets": [
+    {
+      "a_pins": [
+        1
+      ],
+      "b_pins": [
+        3
+      ]
+    },
+    {
+      "a_pins": [
+        2
+      ],
+      "b_pins": [
+        2
+      ]
+    },
+    {
+      "a_pins": [
+        3
+      ],
+      "b_pins": [
+        1
+      ]
+    },
+    {
+      "a_pins": [
+        4
+      ],
+      "b_pins": [
+        4
+      ]
+    }
+  ],
+  "inv_no": "50074.5.0",
+  "doc": {
+    "title": "Кабель STX I2C для Airspeed Sensor ver_1",
+    "length_mm": 1200,
+    "wires": [
+      {
+        "net": 0,
+        "signal": "GND",
+        "color": "black"
+      },
+      {
+        "net": 1,
+        "signal": "SDA",
+        "color": "yellow"
+      },
+      {
+        "net": 2,
+        "signal": "SCL",
+        "color": "green"
+      },
+      {
+        "net": 3,
+        "signal": "5V",
+        "color": "red"
+      }
+    ],
+    "twisted": [
+      [
+        0,
+        1
+      ],
+      [
+        2,
+        3
+      ]
+    ]
+  }
+}
